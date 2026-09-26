@@ -1,0 +1,40 @@
+name: Build Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          arch: arm64
+          runner: ubuntu-24.04-arm
+          expander_leg: ubuntu-latest--arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install native MinGW binutils for launch4j (Linux arm64)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y binutils-mingw-w64-i686
+
+    - name: Set up JDK
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: 25
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v6
+
+    - name: Build
+      run: ./gradlew build dist distWin
+      env:
+        JADX_BUILD_JAVA_VERSION: 11
+    name: tests [${{ matrix.expander_leg }}]
+    timeout-minutes: 150
